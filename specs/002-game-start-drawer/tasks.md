@@ -25,11 +25,11 @@
 
 **Purpose**: Extend backend types with game state fields that all stories depend on.
 
-- [ ] T001 [P] Add `drawerId: string | null` field to Room interface in backend/src/models/game.ts
-- [ ] T002 [P] Add `secretWord: string | null` field to Room interface in backend/src/models/game.ts
-- [ ] T003 Add `drawerId: string | null` field to RoomSnapshot interface in backend/src/models/game.ts
-- [ ] T004 Add `secretWord: string | null` field to RoomSnapshot interface in backend/src/models/game.ts
-- [ ] T005 Initialize `drawerId: null` and `secretWord: null` in `createRoom()` in backend/src/services/roomStore.ts so existing room creation still works
+- [x] T001 [P] Add `drawerId: string | null` field to Room interface in backend/src/models/game.ts
+- [x] T002 [P] Add `secretWord: string | null` field to Room interface in backend/src/models/game.ts
+- [x] T003 Add `drawerId: string | null` field to RoomSnapshot interface in backend/src/models/game.ts
+- [x] T004 Add `secretWord: string | null` field to RoomSnapshot interface in backend/src/models/game.ts
+- [x] T005 Initialize `drawerId: null` and `secretWord: null` in `createRoom()` in backend/src/services/roomStore.ts so existing room creation still works
 
 **Checkpoint**: `npm run build` passes in backend/. Room creation returns drawerId: null and secretWord: null.
 
@@ -41,10 +41,10 @@
 
 **CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T006 Update `startGame()` in backend/src/services/roomStore.ts to set `room.drawerId = room.hostId` when transitioning to "playing" (FR-001)
-- [ ] T007 Update `startGame()` in backend/src/services/roomStore.ts to set `room.secretWord = STARTER_WORDS[0]` when transitioning to "playing" (FR-004) — import STARTER_WORDS from seed/starterData.ts
-- [ ] T008 Update `toRoomSnapshot()` in backend/src/services/roomStore.ts to always include `drawerId` from room in the returned snapshot
-- [ ] T009 Update frontend RoomSnapshot type in frontend/src/services/api.ts to include `drawerId: string | null` and `secretWord: string | null`
+- [x] T006 Update `startGame()` in backend/src/services/roomStore.ts to set `room.drawerId = room.hostId` when transitioning to "playing" (FR-001)
+- [x] T007 Update `startGame()` in backend/src/services/roomStore.ts to set `room.secretWord = STARTER_WORDS[0]` when transitioning to "playing" (FR-004) — import STARTER_WORDS from seed/starterData.ts
+- [x] T008 Update `toRoomSnapshot()` in backend/src/services/roomStore.ts to always include `drawerId` from room in the returned snapshot
+- [x] T009 Update frontend RoomSnapshot type in frontend/src/services/api.ts to include `drawerId: string | null` and `secretWord: string | null`
 
 **Checkpoint**: `npm run build` passes in both backend/ and frontend/. POST /rooms/:code/start returns drawerId and secretWord in response.
 
@@ -58,9 +58,9 @@
 
 ### Implementation for User Story 1
 
-- [ ] T010 [US1] Update frontend/src/pages/GamePage.tsx to display a participant list showing each player's name and role — derive role from `room.drawerId`: if `participant.id === room.drawerId` show "Drawer", otherwise show "Guesser" (FR-003, FR-006)
-- [ ] T011 [US1] Update the game screen header in frontend/src/pages/GamePage.tsx to show the drawer's name prominently (e.g., "Drawing: Alice") so all players know who is drawing (FR-003)
-- [ ] T012 [US1] Validate: create room with 3 players → start game → all tabs show same drawer (host) and guessers → roles are consistent across all views (SC-004)
+- [x] T010 [US1] Update frontend/src/pages/GamePage.tsx to display a participant list showing each player's name and role — derive role from `room.drawerId`: if `participant.id === room.drawerId` show "Drawer", otherwise show "Guesser" (FR-003, FR-006)
+- [x] T011 [US1] Update the game screen header in frontend/src/pages/GamePage.tsx to show the drawer's name prominently (e.g., "Drawing: Alice") so all players know who is drawing (FR-003)
+- [x] T012 [US1] Validate: create room with 3 players → start game → all tabs show same drawer (host) and guessers → roles are consistent across all views (SC-004)
 
 **Checkpoint**: Game screen displays drawer and guesser roles for all participants. Consistent across tabs.
 
@@ -74,7 +74,7 @@
 
 ### Implementation for User Story 2
 
-- [ ] T013 [US2] Validate deterministic word selection: start game → verify response includes `secretWord: "rocket"` → start a second game in a new room → verify same word "rocket" (SC-003)
+- [x] T013 [US2] Validate deterministic word selection: start game → verify response includes `secretWord: "rocket"` → start a second game in a new room → verify same word "rocket" (SC-003)
 
 **Checkpoint**: Word selection is deterministic. No implementation changes needed beyond Phase 2 (T007 already sets STARTER_WORDS[0]).
 
@@ -88,11 +88,11 @@
 
 ### Implementation for User Story 3
 
-- [ ] T014 [US3] Update `toRoomSnapshot()` in backend/src/services/roomStore.ts to implement viewer-based word filtering: if `viewerParticipantId === room.drawerId`, include `room.secretWord`; otherwise set `secretWord: null`. When room is in lobby or viewerParticipantId is missing, always return `secretWord: null` (FR-005)
-- [ ] T015 [US3] Update frontend/src/pages/GamePage.tsx to display the secret word for the drawer — show "Your word: {secretWord}" when `room.secretWord` is present (drawer view) (FR-005)
-- [ ] T016 [US3] Update frontend/src/pages/GamePage.tsx to display a placeholder for guessers — show "Guess the word!" when `room.secretWord` is null (guesser view) (FR-005)
-- [ ] T017 [US3] Add ~2s polling to frontend/src/pages/GamePage.tsx using `setInterval` + cleanup pattern from LobbyPage — fetch room state on mount and every ~2000ms, stop on unmount, show Reconnect button on error (FR-007)
-- [ ] T018 [US3] Validate word visibility: drawer tab shows "Your word: rocket" → guesser tab shows "Guess the word!" with no word visible → verify by inspecting the poll response that guesser receives `secretWord: null` (SC-002)
+- [x] T014 [US3] Update `toRoomSnapshot()` in backend/src/services/roomStore.ts to implement viewer-based word filtering: if `viewerParticipantId === room.drawerId`, include `room.secretWord`; otherwise set `secretWord: null`. When room is in lobby or viewerParticipantId is missing, always return `secretWord: null` (FR-005)
+- [x] T015 [US3] Update frontend/src/pages/GamePage.tsx to display the secret word for the drawer — show "Your word: {secretWord}" when `room.secretWord` is present (drawer view) (FR-005)
+- [x] T016 [US3] Update frontend/src/pages/GamePage.tsx to display a placeholder for guessers — show "Guess the word!" when `room.secretWord` is null (guesser view) (FR-005)
+- [x] T017 [US3] Add ~2s polling to frontend/src/pages/GamePage.tsx using `setInterval` + cleanup pattern from LobbyPage — fetch room state on mount and every ~2000ms, stop on unmount, show Reconnect button on error (FR-007)
+- [x] T018 [US3] Validate word visibility: drawer tab shows "Your word: rocket" → guesser tab shows "Guess the word!" with no word visible → verify by inspecting the poll response that guesser receives `secretWord: null` (SC-002)
 
 **Checkpoint**: Word visible to drawer only. Guesser never sees word. Polling active on game screen.
 
@@ -102,10 +102,10 @@
 
 **Purpose**: Build validation and end-to-end walkthrough.
 
-- [ ] T019 Run `npm run build` in backend/ and verify clean compilation
-- [ ] T020 Run `npm run build` in frontend/ and verify clean compilation
-- [ ] T021 Execute full quickstart.md walkthrough (steps 1-5) in two browser tabs to validate all acceptance scenarios end-to-end
-- [ ] T022 Verify determinism: start two separate games in different rooms, confirm both assign the same word ("rocket") and the same drawer rule (host)
+- [x] T019 Run `npm run build` in backend/ and verify clean compilation
+- [x] T020 Run `npm run build` in frontend/ and verify clean compilation
+- [x] T021 Execute full quickstart.md walkthrough (steps 1-5) in two browser tabs to validate all acceptance scenarios end-to-end
+- [x] T022 Verify determinism: start two separate games in different rooms, confirm both assign the same word ("rocket") and the same drawer rule (host)
 
 ---
 

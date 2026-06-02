@@ -56,6 +56,8 @@ export function createRoom(playerName: string) {
     code: generateUniqueCode(),
     status: "lobby",
     hostId: participant.id,
+    drawerId: null,
+    secretWord: null,
     participants: [participant],
     createdAt: now(),
     updatedAt: now()
@@ -117,6 +119,8 @@ export function startGame(code: string, participantId: string): { error: string;
   }
 
   room.status = "playing";
+  room.drawerId = room.hostId;
+  room.secretWord = STARTER_WORDS[0];
   room.updatedAt = now();
   rooms.set(room.code, room);
 
@@ -130,12 +134,14 @@ export function saveRoom(room: Room) {
 }
 
 export function toRoomSnapshot(room: Room, viewerParticipantId?: string): RoomSnapshot {
-  void viewerParticipantId;
+  const isDrawer = viewerParticipantId != null && viewerParticipantId === room.drawerId;
 
   return {
     code: room.code,
     status: room.status,
     hostId: room.hostId,
+    drawerId: room.drawerId,
+    secretWord: isDrawer ? room.secretWord : null,
     participants: room.participants.map((participant) => ({ ...participant })),
     availableWords: listWords(),
     roles: [...STARTER_ROLES]
