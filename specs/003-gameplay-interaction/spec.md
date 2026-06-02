@@ -250,9 +250,10 @@ guesser. Verify their score shows 100. Submit an incorrect guess
   tools (shapes, colors, line thickness) beyond basic freehand and
   clear are required.
 - Drawing is synced to guessers via REST polling (~2s), not
-  WebSockets. The drawer's canvas strokes are stored on the server
-  and served to all players on each poll cycle. This reuses the
-  same polling pattern as guess history and scores.
+  WebSockets. The drawer sends each completed stroke to the server
+  on mouse-up. Guessers receive the full stroke data on each poll
+  cycle and render it on their canvas. This reuses the same
+  polling pattern as guess history and scores.
 - Guess history and scores are stored in-memory on the backend as
   part of the room state. No persistence across server restarts.
 - The guess form input is cleared after each successful
