@@ -140,12 +140,12 @@ verify the word is hidden or masked.
 
 ### Key Entities
 
-- **Round**: Represents one round of play within a room. Key
-  attributes: drawer participant ID, secret word, round status.
-- **Room** (extended): Gains round-level state including the
-  current drawer ID and the selected secret word.
-- **Participant** (extended): Each participant has a role for the
-  current round — either drawer or guesser.
+- **Room** (extended): Gains game-level state: drawer participant
+  ID and selected secret word, stored directly on the room. No
+  separate Round entity — game state is flat for single-round
+  scope.
+- **Participant** (unchanged): Roles (drawer or guesser) are
+  derived from the room's drawer ID, not stored per participant.
 
 ## Success Criteria *(mandatory)*
 
