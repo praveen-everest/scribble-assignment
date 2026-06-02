@@ -110,6 +110,37 @@ class RoomStore {
     this.setRoomSnapshot(response.room);
     return response.room;
   }
+
+  async addStroke(stroke: Array<{ x: number; y: number }>) {
+    if (!this.state.room || !this.state.participantId) {
+      return;
+    }
+
+    await api.draw(this.state.room.code, this.state.participantId, stroke);
+  }
+
+  async clearCanvas() {
+    if (!this.state.room || !this.state.participantId) {
+      return;
+    }
+
+    await api.clearCanvas(this.state.room.code, this.state.participantId);
+    await this.fetchRoom();
+  }
+
+  async submitGuess(text: string) {
+    if (!this.state.room || !this.state.participantId) {
+      return null;
+    }
+
+    const response = await api.submitGuess(
+      this.state.room.code,
+      this.state.participantId,
+      text
+    );
+    await this.fetchRoom();
+    return response.guess;
+  }
 }
 
 const RoomStoreContext = createContext<RoomStore | null>(null);

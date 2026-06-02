@@ -1,13 +1,25 @@
 import { Router } from "express";
 import {
+  clearCanvasSchema,
   createRoomSchema,
+  drawSchema,
+  guessSchema,
   HttpError,
   joinRoomSchema,
   roomCodeParamsSchema,
   roomViewerQuerySchema,
   startGameSchema
 } from "./schemas.js";
-import { createRoom, getRoom, joinRoom, startGame, toRoomSnapshot } from "../services/roomStore.js";
+import {
+  addStroke,
+  clearCanvas,
+  createRoom,
+  getRoom,
+  joinRoom,
+  startGame,
+  submitGuess,
+  toRoomSnapshot
+} from "../services/roomStore.js";
 
 export function createRoomsRouter() {
   const router = Router();
@@ -106,6 +118,57 @@ export function createRoomsRouter() {
       response.json({
         room: toRoomSnapshot(room, participantId)
       });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/:code/draw", (request, response, next) => {
+    try {
+      const { code } = roomCodeParamsSchema.parse(request.params);
+      const { participantId, stroke } = drawSchema.parse(request.body);
+
+      const result = addStroke(code.toUpperCase(), participantId, stroke);
+
+      if ("error" in result) {
+        throw new HttpError(result.status, result.error);
+      }
+
+      response.json({ ok: true });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/:code/clear", (request, response, next) => {
+    try {
+      const { code } = roomCodeParamsSchema.parse(request.params);
+      const { participantId } = clearCanvasSchema.parse(request.body);
+
+      const result = clearCanvas(code.toUpperCase(), participantId);
+
+      if ("error" in result) {
+        throw new HttpError(result.status, result.error);
+      }
+
+      response.json({ ok: true });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/:code/guess", (request, response, next) => {
+    try {
+      const { code } = roomCodeParamsSchema.parse(request.params);
+      const { participantId, text } = guessSchema.parse(request.body);
+
+      const result = submitGuess(code.toUpperCase(), participantId, text);
+
+      if ("error" in result) {
+        throw new HttpError(result.status, result.error);
+      }
+
+      response.json({ guess: result.guess });
     } catch (error) {
       next(error);
     }

@@ -20,6 +20,23 @@ export const startGameSchema = z.object({
   participantId: z.string()
 });
 
+export const drawSchema = z.object({
+  participantId: z.string(),
+  stroke: z.array(z.object({
+    x: z.number(),
+    y: z.number()
+  }))
+});
+
+export const clearCanvasSchema = z.object({
+  participantId: z.string()
+});
+
+export const guessSchema = z.object({
+  participantId: z.string(),
+  text: z.string()
+});
+
 export class HttpError extends Error {
   statusCode: number;
 

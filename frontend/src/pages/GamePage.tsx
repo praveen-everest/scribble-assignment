@@ -12,9 +12,13 @@ const POLL_INTERVAL_MS = 2000;
 export function GamePage() {
   const navigate = useNavigate();
   const roomStore = useRoomStore();
-  const { room, participantId, isLoading } = useRoomState();
+  const { room, participantId } = useRoomState();
   const [pollError, setPollError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isDrawingRef = useRef(false);
+  const currentStrokeRef = useRef<Array<{ x: number; y: number }>>([]);
 
   const isDrawer = room?.drawerId != null && room.drawerId === participantId;
   const drawerName = room?.participants.find((p) => p.id === room.drawerId)?.name ?? "Unknown";
@@ -51,11 +55,113 @@ export function GamePage() {
     return stopPolling;
   }, [navigate, room?.code, startPolling, stopPolling]);
 
+  // Render strokes from room state onto canvas
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !room) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const w = canvas.width;
+    const h = canvas.height;
+
+    ctx.clearRect(0, 0, w, h);
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    for (const stroke of room.strokes ?? []) {
+      if (stroke.length < 2) continue;
+      ctx.beginPath();
+      ctx.moveTo(stroke[0].x * w, stroke[0].y * h);
+      for (let i = 1; i < stroke.length; i++) {
+        ctx.lineTo(stroke[i].x * w, stroke[i].y * h);
+      }
+      ctx.stroke();
+    }
+
+    // Also draw the in-progress local stroke for the drawer
+    if (isDrawer && currentStrokeRef.current.length >= 2) {
+      ctx.beginPath();
+      ctx.moveTo(currentStrokeRef.current[0].x * w, currentStrokeRef.current[0].y * h);
+      for (let i = 1; i < currentStrokeRef.current.length; i++) {
+        ctx.lineTo(currentStrokeRef.current[i].x * w, currentStrokeRef.current[i].y * h);
+      }
+      ctx.stroke();
+    }
+  }, [room?.strokes, isDrawer]);
+
+  function getCanvasPoint(event: React.MouseEvent<HTMLCanvasElement>) {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (event.clientX - rect.left) / rect.width,
+      y: (event.clientY - rect.top) / rect.height
+    };
+  }
+
+  function handleMouseDown(event: React.MouseEvent<HTMLCanvasElement>) {
+    if (!isDrawer) return;
+    isDrawingRef.current = true;
+    const point = getCanvasPoint(event);
+    if (point) {
+      currentStrokeRef.current = [point];
+    }
+  }
+
+  function handleMouseMove(event: React.MouseEvent<HTMLCanvasElement>) {
+    if (!isDrawer || !isDrawingRef.current) return;
+    const point = getCanvasPoint(event);
+    if (!point) return;
+
+    currentStrokeRef.current.push(point);
+
+    // Draw the current stroke locally for immediate feedback
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const points = currentStrokeRef.current;
+    if (points.length < 2) return;
+
+    const prev = points[points.length - 2];
+    const curr = points[points.length - 1];
+
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 2;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(prev.x * canvas.width, prev.y * canvas.height);
+    ctx.lineTo(curr.x * canvas.width, curr.y * canvas.height);
+    ctx.stroke();
+  }
+
+  function handleMouseUp() {
+    if (!isDrawer || !isDrawingRef.current) return;
+    isDrawingRef.current = false;
+
+    if (currentStrokeRef.current.length >= 2) {
+      roomStore.addStroke([...currentStrokeRef.current]);
+    }
+    currentStrokeRef.current = [];
+  }
+
+  async function handleClearCanvas() {
+    try {
+      await roomStore.clearCanvas();
+    } catch {
+      // Ignore — poll will show current state
+    }
+  }
+
   if (!room) {
     return null;
   }
-
-  const viewer = room.participants.find((p) => p.id === participantId) ?? null;
 
   return (
     <section className="panel game-page">
@@ -76,38 +182,59 @@ export function GamePage() {
 
       <div className="game-page__layout">
         <aside className="game-page__sidebar game-page__sidebar--left">
-          <Card title="Players">
-            <ul className="player-list">
-              {room.participants.map((participant) => {
-                const role = participant.id === room.drawerId ? "Drawer" : "Guesser";
-                return (
-                  <li key={participant.id}>
+          <Scoreboard room={room} />
+          <Card title="Guess History">
+            {(room.guesses ?? []).length === 0 ? (
+              <p style={{ color: "#9ca3af" }}>No guesses yet.</p>
+            ) : (
+              <ul className="player-list">
+                {(room.guesses ?? []).map((guess, idx) => (
+                  <li key={idx}>
                     <span>
-                      {participant.name} ({role})
+                      <strong>{guess.playerName}</strong>: {guess.text}
                     </span>
-                    {participant.id === participantId && (
-                      <span className="player-list__meta">you</span>
-                    )}
+                    <span
+                      className="player-list__meta"
+                      style={{ color: guess.correct ? "#16a34a" : "#9ca3af" }}
+                    >
+                      {guess.correct ? "correct" : "wrong"}
+                    </span>
                   </li>
-                );
-              })}
-            </ul>
+                ))}
+              </ul>
+            )}
           </Card>
-          <ResultPanel />
         </aside>
 
         <div className="game-page__main">
           <Card title="Canvas">
-            <div
-              className="canvas-placeholder"
+            <canvas
+              ref={canvasRef}
+              width={800}
+              height={500}
               style={{
-                minHeight: "500px",
+                width: "100%",
+                height: "500px",
                 backgroundColor: "#ffffff",
-                border: "1px solid #e5e7eb"
+                border: "1px solid #e5e7eb",
+                cursor: isDrawer ? "crosshair" : "default",
+                display: "block"
               }}
-            >
-              {isDrawer ? "You are the drawer!" : `Waiting for ${drawerName} to draw...`}
-            </div>
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+            />
+            {isDrawer && (
+              <div className="button-row button-row--compact" style={{ marginTop: "8px" }}>
+                <button
+                  className="button button--secondary"
+                  onClick={handleClearCanvas}
+                >
+                  Clear Canvas
+                </button>
+              </div>
+            )}
           </Card>
         </div>
 
@@ -116,7 +243,7 @@ export function GamePage() {
             <dl className="detail-list">
               <div>
                 <dt>Name</dt>
-                <dd>{viewer?.name ?? "Unknown player"}</dd>
+                <dd>{room.participants.find((p) => p.id === participantId)?.name ?? "Unknown player"}</dd>
               </div>
               <div>
                 <dt>Role</dt>
@@ -136,6 +263,8 @@ export function GamePage() {
                 Reconnect
               </button>
             </Card>
+          ) : isDrawer ? (
+            <ResultPanel />
           ) : (
             <Card title="Your Guess">
               <GuessForm />
