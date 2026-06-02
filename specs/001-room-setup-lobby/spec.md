@@ -111,7 +111,7 @@ manual action.
 ### User Story 4 - Host Starts Game (Priority: P2)
 
 Only the host sees an enabled "Start Game" control. The control
-is disabled (or hidden with a message) until at least 2 players
+is visible but disabled with a message until at least 2 players
 are in the room. Non-host players see a waiting message instead
 of a start control.
 
@@ -169,7 +169,7 @@ present. Verify it becomes enabled once the second player joins.
   state.
 - **FR-002**: System MUST generate a unique 4-character
   alphanumeric room code on room creation, avoiding ambiguous
-  characters (I, O, 1, L).
+  characters (letters I and O; digits 0 and 1).
 - **FR-003**: System MUST reject join attempts with an empty,
   whitespace-only, or non-existent room code and display a
   specific, user-readable error message for each case.
@@ -204,10 +204,10 @@ present. Verify it becomes enabled once the second player joins.
 ### Key Entities
 
 - **Room**: Represents a game session. Key attributes: unique
-  code, current status (lobby or game), list of participants,
-  reference to the host participant, creation timestamp.
+  code, current status (lobby or playing), list of participants,
+  host participant ID, creation timestamp.
 - **Participant**: A player within a room. Key attributes: unique
-  identifier, display name, join timestamp, host flag (boolean).
+  identifier, display name, join timestamp.
 
 ## Success Criteria *(mandatory)*
 
