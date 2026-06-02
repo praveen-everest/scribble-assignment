@@ -25,8 +25,8 @@
 
 **Purpose**: Extend RoomStatus with "result" and update frontend type.
 
-- [ ] T001 Extend `RoomStatus` type to `"lobby" | "playing" | "result"` in backend/src/models/game.ts (FR-001)
-- [ ] T002 Update frontend RoomSnapshot `status` type to `"lobby" | "playing" | "result"` in frontend/src/services/api.ts
+- [x] T001 Extend `RoomStatus` type to `"lobby" | "playing" | "result"` in backend/src/models/game.ts (FR-001)
+- [x] T002 Update frontend RoomSnapshot `status` type to `"lobby" | "playing" | "result"` in frontend/src/services/api.ts
 
 **Checkpoint**: Both builds pass with new status type.
 
@@ -38,15 +38,15 @@
 
 **CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T003 Add `endRound(code, participantId)` function in backend/src/services/roomStore.ts — validate room exists, status is "playing", participantId matches hostId; transition status to "result"; preserve all game state (FR-005)
-- [ ] T004 Add `restart(code, participantId)` function in backend/src/services/roomStore.ts — validate room exists, status is "result", participantId matches hostId; transition status to "lobby"; clear drawerId=null, secretWord=null, strokes=[], guesses=[], scores={}; preserve participants and hostId (FR-006, FR-007, FR-008)
-- [ ] T005 Update `toRoomSnapshot()` in backend/src/services/roomStore.ts — when status is "result", return secretWord to ALL viewers (not just drawer) so the word is revealed on the result screen (FR-002)
-- [ ] T006 Add Zod schemas for end-round request (`{ participantId }`) and restart request (`{ participantId }`) in backend/src/api/schemas.ts
-- [ ] T007 Add POST /rooms/:code/end-round route handler in backend/src/api/rooms.ts — parse body, call endRound(), return room snapshot on success or 403/400 on failure per contracts/api.md
-- [ ] T008 Add POST /rooms/:code/restart route handler in backend/src/api/rooms.ts — parse body, call restart(), return room snapshot on success or 403/400 on failure per contracts/api.md
-- [ ] T009 Update join handler in backend/src/api/rooms.ts to reject joins when room status is "result" with 403 "Game already in progress" (FR-011)
-- [ ] T010 Add `api.endRound(code, participantId)` and `api.restart(code, participantId)` methods in frontend/src/services/api.ts
-- [ ] T011 Add `endRound()` and `restart()` methods to RoomStore in frontend/src/state/roomStore.ts — call API, then fetchRoom to refresh state
+- [x] T003 Add `endRound(code, participantId)` function in backend/src/services/roomStore.ts — validate room exists, status is "playing", participantId matches hostId; transition status to "result"; preserve all game state (FR-005)
+- [x] T004 Add `restart(code, participantId)` function in backend/src/services/roomStore.ts — validate room exists, status is "result", participantId matches hostId; transition status to "lobby"; clear drawerId=null, secretWord=null, strokes=[], guesses=[], scores={}; preserve participants and hostId (FR-006, FR-007, FR-008)
+- [x] T005 Update `toRoomSnapshot()` in backend/src/services/roomStore.ts — when status is "result", return secretWord to ALL viewers (not just drawer) so the word is revealed on the result screen (FR-002)
+- [x] T006 Add Zod schemas for end-round request (`{ participantId }`) and restart request (`{ participantId }`) in backend/src/api/schemas.ts
+- [x] T007 Add POST /rooms/:code/end-round route handler in backend/src/api/rooms.ts — parse body, call endRound(), return room snapshot on success or 403/400 on failure per contracts/api.md
+- [x] T008 Add POST /rooms/:code/restart route handler in backend/src/api/rooms.ts — parse body, call restart(), return room snapshot on success or 403/400 on failure per contracts/api.md
+- [x] T009 Update join handler in backend/src/api/rooms.ts to reject joins when room status is "result" with 403 "Game already in progress" (FR-011)
+- [x] T010 Add `api.endRound(code, participantId)` and `api.restart(code, participantId)` methods in frontend/src/services/api.ts
+- [x] T011 Add `endRound()` and `restart()` methods to RoomStore in frontend/src/state/roomStore.ts — call API, then fetchRoom to refresh state
 
 **Checkpoint**: `npm run build` passes. End-round transitions playing→result with word revealed. Restart transitions result→lobby with state cleared.
 
@@ -60,9 +60,9 @@
 
 ### Implementation for User Story 1
 
-- [ ] T012 [US1] Update frontend/src/pages/GamePage.tsx to detect `room.status === "result"` and render a result view: display the revealed secret word prominently for all players (not just the drawer), show final scores for all participants, and show the full guess history (FR-002, FR-003, FR-004)
-- [ ] T013 [US1] Ensure the result view hides canvas interaction (no drawing/clearing) and hides the guess form — the result screen is read-only (FR-002)
-- [ ] T014 [US1] Validate result screen: end round → both tabs show "rocket" as the word, same scores, same guess history → drawer and guesser views are identical (SC-001)
+- [x] T012 [US1] Update frontend/src/pages/GamePage.tsx to detect `room.status === "result"` and render a result view: display the revealed secret word prominently for all players (not just the drawer), show final scores for all participants, and show the full guess history (FR-002, FR-003, FR-004)
+- [x] T013 [US1] Ensure the result view hides canvas interaction (no drawing/clearing) and hides the guess form — the result screen is read-only (FR-002)
+- [x] T014 [US1] Validate result screen: end round → both tabs show "rocket" as the word, same scores, same guess history → drawer and guesser views are identical (SC-001)
 
 **Checkpoint**: Result screen shows word, scores, and history to all players.
 
@@ -76,10 +76,10 @@
 
 ### Implementation for User Story 2
 
-- [ ] T015 [US2] Add "End Round" button in frontend/src/pages/GamePage.tsx — visible only to the host when status is "playing"; calls roomStore.endRound(); host sees result screen immediately after successful response (FR-005)
-- [ ] T016 [US2] Ensure non-host players on the game screen do NOT see the "End Round" button — only a playing status indicator (FR-005)
-- [ ] T017 [US2] Add game-screen poll transition logic in frontend/src/pages/GamePage.tsx — when non-host players detect `status === "result"` on poll, switch to the result view (FR-010)
-- [ ] T018 [US2] Validate: host clicks End Round → room status becomes "result" → non-host sees result screen within ~2s → non-host has no End Round button (SC-004)
+- [x] T015 [US2] Add "End Round" button in frontend/src/pages/GamePage.tsx — visible only to the host when status is "playing"; calls roomStore.endRound(); host sees result screen immediately after successful response (FR-005)
+- [x] T016 [US2] Ensure non-host players on the game screen do NOT see the "End Round" button — only a playing status indicator (FR-005)
+- [x] T017 [US2] Add game-screen poll transition logic in frontend/src/pages/GamePage.tsx — when non-host players detect `status === "result"` on poll, switch to the result view (FR-010)
+- [x] T018 [US2] Validate: host clicks End Round → room status becomes "result" → non-host sees result screen within ~2s → non-host has no End Round button (SC-004)
 
 **Checkpoint**: Host can end the round. All players transition to result screen.
 
@@ -93,11 +93,11 @@
 
 ### Implementation for User Story 3
 
-- [ ] T019 [US3] Add "Play Again" button in the result view of frontend/src/pages/GamePage.tsx — visible only to the host when status is "result"; calls roomStore.restart(); host navigates to /lobby after successful response (FR-006)
-- [ ] T020 [US3] Show "Waiting for host to restart" message for non-host players on the result screen (FR-006)
-- [ ] T021 [US3] Add result-screen poll transition logic in frontend/src/pages/GamePage.tsx — when non-host players detect `status === "lobby"` on poll, navigate to /lobby (FR-010)
-- [ ] T022 [US3] Validate restart: host clicks Play Again → both tabs return to lobby → both players present → drawer, word, strokes, guesses, scores all cleared (SC-002)
-- [ ] T023 [US3] Validate full game loop: lobby → start game → play round → end round → result → play again → lobby → start game again → verify fresh state (SC-003, SC-005)
+- [x] T019 [US3] Add "Play Again" button in the result view of frontend/src/pages/GamePage.tsx — visible only to the host when status is "result"; calls roomStore.restart(); host navigates to /lobby after successful response (FR-006)
+- [x] T020 [US3] Show "Waiting for host to restart" message for non-host players on the result screen (FR-006)
+- [x] T021 [US3] Add result-screen poll transition logic in frontend/src/pages/GamePage.tsx — when non-host players detect `status === "lobby"` on poll, navigate to /lobby (FR-010)
+- [x] T022 [US3] Validate restart: host clicks Play Again → both tabs return to lobby → both players present → drawer, word, strokes, guesses, scores all cleared (SC-002)
+- [x] T023 [US3] Validate full game loop: lobby → start game → play round → end round → result → play again → lobby → start game again → verify fresh state (SC-003, SC-005)
 
 **Checkpoint**: Full game loop completes. Participants preserved, round state cleared on restart.
 
@@ -107,10 +107,10 @@
 
 **Purpose**: Build validation and end-to-end walkthrough.
 
-- [ ] T024 Run `npm run build` in backend/ and verify clean compilation
-- [ ] T025 Run `npm run build` in frontend/ and verify clean compilation
-- [ ] T026 Execute full quickstart.md walkthrough (steps 1-5) in two browser tabs to validate all acceptance scenarios end-to-end
-- [ ] T027 Verify host-only controls: non-host cannot end round or restart; End Round and Play Again buttons hidden for non-host (SC-004)
+- [x] T024 Run `npm run build` in backend/ and verify clean compilation
+- [x] T025 Run `npm run build` in frontend/ and verify clean compilation
+- [x] T026 Execute full quickstart.md walkthrough (steps 1-5) in two browser tabs to validate all acceptance scenarios end-to-end
+- [x] T027 Verify host-only controls: non-host cannot end round or restart; End Round and Play Again buttons hidden for non-host (SC-004)
 
 ---
 

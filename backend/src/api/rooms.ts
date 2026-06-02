@@ -3,9 +3,11 @@ import {
   clearCanvasSchema,
   createRoomSchema,
   drawSchema,
+  endRoundSchema,
   guessSchema,
   HttpError,
   joinRoomSchema,
+  restartSchema,
   roomCodeParamsSchema,
   roomViewerQuerySchema,
   startGameSchema
@@ -14,8 +16,10 @@ import {
   addStroke,
   clearCanvas,
   createRoom,
+  endRound,
   getRoom,
   joinRoom,
+  restart,
   startGame,
   submitGuess,
   toRoomSnapshot
@@ -169,6 +173,46 @@ export function createRoomsRouter() {
       }
 
       response.json({ guess: result.guess });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/:code/end-round", (request, response, next) => {
+    try {
+      const { code } = roomCodeParamsSchema.parse(request.params);
+      const { participantId } = endRoundSchema.parse(request.body);
+
+      const result = endRound(code.toUpperCase(), participantId);
+
+      if ("error" in result) {
+        throw new HttpError(result.status, result.error);
+      }
+
+      const { room } = result;
+      response.json({
+        room: toRoomSnapshot(room, participantId)
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/:code/restart", (request, response, next) => {
+    try {
+      const { code } = roomCodeParamsSchema.parse(request.params);
+      const { participantId } = restartSchema.parse(request.body);
+
+      const result = restart(code.toUpperCase(), participantId);
+
+      if ("error" in result) {
+        throw new HttpError(result.status, result.error);
+      }
+
+      const { room } = result;
+      response.json({
+        room: toRoomSnapshot(room, participantId)
+      });
     } catch (error) {
       next(error);
     }

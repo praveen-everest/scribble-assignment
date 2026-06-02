@@ -227,6 +227,55 @@ export function submitGuess(code: string, participantId: string, text: string): 
   return { guess };
 }
 
+export function endRound(code: string, participantId: string): { error: string; status: number } | { room: Room } {
+  const room = rooms.get(code);
+
+  if (!room) {
+    return { error: "Room not found", status: 404 };
+  }
+
+  if (room.status !== "playing") {
+    return { error: "Round is not active", status: 400 };
+  }
+
+  if (room.hostId !== participantId) {
+    return { error: "Only the host can end the round", status: 403 };
+  }
+
+  room.status = "result";
+  room.updatedAt = now();
+  rooms.set(room.code, room);
+
+  return { room: cloneRoom(room) };
+}
+
+export function restart(code: string, participantId: string): { error: string; status: number } | { room: Room } {
+  const room = rooms.get(code);
+
+  if (!room) {
+    return { error: "Room not found", status: 404 };
+  }
+
+  if (room.status !== "result") {
+    return { error: "Game has not ended yet", status: 400 };
+  }
+
+  if (room.hostId !== participantId) {
+    return { error: "Only the host can restart the game", status: 403 };
+  }
+
+  room.status = "lobby";
+  room.drawerId = null;
+  room.secretWord = null;
+  room.strokes = [];
+  room.guesses = [];
+  room.scores = {};
+  room.updatedAt = now();
+  rooms.set(room.code, room);
+
+  return { room: cloneRoom(room) };
+}
+
 export function saveRoom(room: Room) {
   room.updatedAt = now();
   rooms.set(room.code, cloneRoom(room));
@@ -235,13 +284,14 @@ export function saveRoom(room: Room) {
 
 export function toRoomSnapshot(room: Room, viewerParticipantId?: string): RoomSnapshot {
   const isDrawer = viewerParticipantId != null && viewerParticipantId === room.drawerId;
+  const isResult = room.status === "result";
 
   return {
     code: room.code,
     status: room.status,
     hostId: room.hostId,
     drawerId: room.drawerId,
-    secretWord: isDrawer ? room.secretWord : null,
+    secretWord: (isDrawer || isResult) ? room.secretWord : null,
     strokes: room.strokes.map((stroke) => stroke.map((p) => ({ ...p }))),
     guesses: room.guesses.map((g) => ({ ...g })),
     scores: { ...room.scores },

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "../components/Card";
 import { GuessForm } from "../components/GuessForm";
-import { ResultPanel } from "../components/ResultPanel";
 import { RoomCodeBadge } from "../components/RoomCodeBadge";
 import { Scoreboard } from "../components/Scoreboard";
 import { useRoomState, useRoomStore } from "../state/roomStore";
@@ -20,7 +19,10 @@ export function GamePage() {
   const isDrawingRef = useRef(false);
   const currentStrokeRef = useRef<Array<{ x: number; y: number }>>([]);
 
+  const isHost = room?.hostId === participantId;
   const isDrawer = room?.drawerId != null && room.drawerId === participantId;
+  const isResult = room?.status === "result";
+  const isPlaying = room?.status === "playing";
   const drawerName = room?.participants.find((p) => p.id === room.drawerId)?.name ?? "Unknown";
 
   const stopPolling = useCallback(() => {
@@ -55,6 +57,14 @@ export function GamePage() {
     return stopPolling;
   }, [navigate, room?.code, startPolling, stopPolling]);
 
+  // Navigate to lobby when status changes to "lobby" (after restart)
+  useEffect(() => {
+    if (room && room.status === "lobby") {
+      stopPolling();
+      navigate("/lobby");
+    }
+  }, [room?.status, navigate, stopPolling]);
+
   // Render strokes from room state onto canvas
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -82,8 +92,7 @@ export function GamePage() {
       ctx.stroke();
     }
 
-    // Also draw the in-progress local stroke for the drawer
-    if (isDrawer && currentStrokeRef.current.length >= 2) {
+    if (isDrawer && isPlaying && currentStrokeRef.current.length >= 2) {
       ctx.beginPath();
       ctx.moveTo(currentStrokeRef.current[0].x * w, currentStrokeRef.current[0].y * h);
       for (let i = 1; i < currentStrokeRef.current.length; i++) {
@@ -91,7 +100,7 @@ export function GamePage() {
       }
       ctx.stroke();
     }
-  }, [room?.strokes, isDrawer]);
+  }, [room?.strokes, isDrawer, isPlaying]);
 
   function getCanvasPoint(event: React.MouseEvent<HTMLCanvasElement>) {
     const canvas = canvasRef.current;
@@ -104,7 +113,7 @@ export function GamePage() {
   }
 
   function handleMouseDown(event: React.MouseEvent<HTMLCanvasElement>) {
-    if (!isDrawer) return;
+    if (!isDrawer || !isPlaying) return;
     isDrawingRef.current = true;
     const point = getCanvasPoint(event);
     if (point) {
@@ -113,13 +122,12 @@ export function GamePage() {
   }
 
   function handleMouseMove(event: React.MouseEvent<HTMLCanvasElement>) {
-    if (!isDrawer || !isDrawingRef.current) return;
+    if (!isDrawer || !isPlaying || !isDrawingRef.current) return;
     const point = getCanvasPoint(event);
     if (!point) return;
 
     currentStrokeRef.current.push(point);
 
-    // Draw the current stroke locally for immediate feedback
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -142,7 +150,7 @@ export function GamePage() {
   }
 
   function handleMouseUp() {
-    if (!isDrawer || !isDrawingRef.current) return;
+    if (!isDrawer || !isPlaying || !isDrawingRef.current) return;
     isDrawingRef.current = false;
 
     if (currentStrokeRef.current.length >= 2) {
@@ -155,7 +163,24 @@ export function GamePage() {
     try {
       await roomStore.clearCanvas();
     } catch {
-      // Ignore — poll will show current state
+      // Ignore
+    }
+  }
+
+  async function handleEndRound() {
+    try {
+      await roomStore.endRound();
+    } catch {
+      // Ignore
+    }
+  }
+
+  async function handleRestart() {
+    try {
+      await roomStore.restart();
+      navigate("/lobby");
+    } catch {
+      // Ignore
     }
   }
 
@@ -163,6 +188,93 @@ export function GamePage() {
     return null;
   }
 
+  // Result screen
+  if (isResult) {
+    return (
+      <section className="panel game-page">
+        <div className="game-page__header">
+          <div className="game-page__header-left">
+            <span className="section-kicker">Round Over</span>
+            <h1 className="game-page__title">
+              The word was: {room.secretWord ?? "unknown"}
+            </h1>
+          </div>
+          <RoomCodeBadge code={room.code} />
+        </div>
+
+        <div className="game-page__layout">
+          <aside className="game-page__sidebar game-page__sidebar--left">
+            <Scoreboard room={room} />
+          </aside>
+
+          <div className="game-page__main">
+            <Card title="Guess History">
+              {(room.guesses ?? []).length === 0 ? (
+                <p style={{ color: "#9ca3af" }}>No guesses were submitted.</p>
+              ) : (
+                <ul className="player-list">
+                  {(room.guesses ?? []).map((guess, idx) => (
+                    <li key={idx}>
+                      <span>
+                        <strong>{guess.playerName}</strong>: {guess.text}
+                      </span>
+                      <span
+                        className="player-list__meta"
+                        style={{ color: guess.correct ? "#16a34a" : "#9ca3af" }}
+                      >
+                        {guess.correct ? "correct" : "wrong"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          </div>
+
+          <aside className="game-page__sidebar game-page__sidebar--right">
+            <Card title="Player Info">
+              <dl className="detail-list">
+                <div>
+                  <dt>Name</dt>
+                  <dd>{room.participants.find((p) => p.id === participantId)?.name ?? "Unknown"}</dd>
+                </div>
+                <div>
+                  <dt>Role</dt>
+                  <dd>{isDrawer ? "Drawer" : "Guesser"}</dd>
+                </div>
+              </dl>
+            </Card>
+
+            {pollError && (
+              <Card title="Status">
+                <p style={{ color: "#b91c1c" }}>{pollError}</p>
+                <button className="button button--secondary" style={{ marginTop: "8px" }} onClick={startPolling}>
+                  Reconnect
+                </button>
+              </Card>
+            )}
+          </aside>
+        </div>
+
+        <div className="button-row button-row--spread">
+          <button className="button button--secondary" onClick={() => navigate("/")}>
+            Leave
+          </button>
+          {isHost ? (
+            <button className="button button--primary" onClick={handleRestart}>
+              Play Again
+            </button>
+          ) : (
+            <span className="status-line" style={{ padding: "8px 16px", backgroundColor: "#e0e7ff", color: "#3730a3" }}>
+              Waiting for host to restart
+            </span>
+          )}
+        </div>
+      </section>
+    );
+  }
+
+  // Playing screen
   return (
     <section className="panel game-page">
       <div className="game-page__header">
@@ -227,10 +339,7 @@ export function GamePage() {
             />
             {isDrawer && (
               <div className="button-row button-row--compact" style={{ marginTop: "8px" }}>
-                <button
-                  className="button button--secondary"
-                  onClick={handleClearCanvas}
-                >
+                <button className="button button--secondary" onClick={handleClearCanvas}>
                   Clear Canvas
                 </button>
               </div>
@@ -255,16 +364,14 @@ export function GamePage() {
           {pollError ? (
             <Card title="Status">
               <p style={{ color: "#b91c1c" }}>{pollError}</p>
-              <button
-                className="button button--secondary"
-                style={{ marginTop: "8px" }}
-                onClick={startPolling}
-              >
+              <button className="button button--secondary" style={{ marginTop: "8px" }} onClick={startPolling}>
                 Reconnect
               </button>
             </Card>
           ) : isDrawer ? (
-            <ResultPanel />
+            <Card title="Game Controls">
+              <p style={{ color: "#6b7280", marginBottom: "8px" }}>You are drawing!</p>
+            </Card>
           ) : (
             <Card title="Your Guess">
               <GuessForm />
@@ -273,10 +380,15 @@ export function GamePage() {
         </aside>
       </div>
 
-      <div className="button-row">
+      <div className="button-row button-row--spread">
         <button className="button button--secondary" onClick={() => navigate("/lobby")}>
           Exit Game
         </button>
+        {isHost && (
+          <button className="button button--secondary" onClick={handleEndRound}>
+            End Round
+          </button>
+        )}
       </div>
     </section>
   );
