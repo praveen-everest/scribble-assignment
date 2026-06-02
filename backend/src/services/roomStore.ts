@@ -29,14 +29,10 @@ function generateUniqueCode() {
   return code;
 }
 
-function displayName(name?: string) {
-  return name || "Player";
-}
-
-function createParticipant(name?: string): Participant {
+function createParticipant(name: string): Participant {
   return {
     id: randomUUID(),
-    name: displayName(name),
+    name: name.trim(),
     joinedAt: now()
   };
 }
@@ -49,11 +45,17 @@ export function listWords() {
   return [...STARTER_WORDS];
 }
 
-export function createRoom(playerName?: string) {
-  const participant = createParticipant(playerName);
+export function createRoom(playerName: string) {
+  const trimmed = playerName.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const participant = createParticipant(trimmed);
   const room: Room = {
     code: generateUniqueCode(),
     status: "lobby",
+    hostId: participant.id,
     participants: [participant],
     createdAt: now(),
     updatedAt: now()
@@ -67,14 +69,19 @@ export function createRoom(playerName?: string) {
   };
 }
 
-export function joinRoom(code: string, playerName?: string) {
+export function joinRoom(code: string, playerName: string) {
+  const trimmed = playerName.trim();
+  if (!trimmed) {
+    return null;
+  }
+
   const room = rooms.get(code);
 
   if (!room) {
     return null;
   }
 
-  const participant = createParticipant(playerName);
+  const participant = createParticipant(trimmed);
   room.participants.push(participant);
   room.updatedAt = now();
   rooms.set(room.code, room);
@@ -90,6 +97,32 @@ export function getRoom(code: string) {
   return room ? cloneRoom(room) : null;
 }
 
+export function startGame(code: string, participantId: string): { error: string; status: number } | { room: Room } {
+  const room = rooms.get(code);
+
+  if (!room) {
+    return { error: "Room not found", status: 404 };
+  }
+
+  if (room.status !== "lobby") {
+    return { error: "Game has already started", status: 400 };
+  }
+
+  if (room.hostId !== participantId) {
+    return { error: "Only the host can start the game", status: 403 };
+  }
+
+  if (room.participants.length < 2) {
+    return { error: "At least 2 players are required to start", status: 400 };
+  }
+
+  room.status = "playing";
+  room.updatedAt = now();
+  rooms.set(room.code, room);
+
+  return { room: cloneRoom(room) };
+}
+
 export function saveRoom(room: Room) {
   room.updatedAt = now();
   rooms.set(room.code, cloneRoom(room));
@@ -102,6 +135,7 @@ export function toRoomSnapshot(room: Room, viewerParticipantId?: string): RoomSn
   return {
     code: room.code,
     status: room.status,
+    hostId: room.hostId,
     participants: room.participants.map((participant) => ({ ...participant })),
     availableWords: listWords(),
     roles: [...STARTER_ROLES]
